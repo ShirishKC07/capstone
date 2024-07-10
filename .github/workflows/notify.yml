@@ -1,23 +1,33 @@
-name: Notify Discord on Pipeline Status
+name: Notify Pipeline Status
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["publish-docker-images"]
+    types: [completed]
 
 jobs:
   notify:
     runs-on: ubuntu-latest
+    environment: development
 
     steps:
-      - name: Notify Discord
-        uses: appleboy/discord-action@master
-        with:
-          webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
-          webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
-          content: |
-            🚀 Pipeline Status Update 🚀
-            Branch: ${{ github.ref }}
-            Commit: ${{ github.sha }}
-            Status: ${{ job.status }}
-            Action: ${{ github.workflow }}
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Send Discord notification on success
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -X POST -H "Content-Type: application/json" -d '{
+            "content": "**[ SUCCESS ] The project ${GITHUB_REPOSITORY} successfully built and published!** \n\n Project Image Repository URL: ${PROJECT_IMAGE_REPOSITORY_URL} \n Project Repository URL: ${PROJECT_REPOSITORY_URL} \n Project Chart URL: ${PROJECT_CHART_URL}"
+          }' $DISCORD_WEBHOOK
+
+      - name: Send Discord notification on failure
+        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          curl -X POST -H "Content-Type: application/json" -d '{
+            "content": "**[ FAILURE ] The project ${GITHUB_REPOSITORY} failed to build and publish: ${ERROR_MESSAGE_PUSH} ${ERROR_OUTPUT_PUSH} ${ERROR_MESSAGE_UPDATE_CHART} ${ERROR_OUTPUT_UPDATE_CHART}**"
+          }' $DISCORD_WEBHOOK
