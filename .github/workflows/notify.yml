@@ -1,0 +1,23 @@
+name: Notify Discord on Pipeline Status
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Discord
+        uses: appleboy/discord-action@master
+        with:
+          webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
+          webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
+          content: |
+            🚀 Pipeline Status Update 🚀
+            Branch: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+            Status: ${{ job.status }}
+            Action: ${{ github.workflow }}
