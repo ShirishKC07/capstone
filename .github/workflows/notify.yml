@@ -1,33 +1,31 @@
-name: Notify Pipeline Status
+name: Notify Discord on Pipeline Status
 
 on:
-  workflow_run:
-    workflows: ["publish-docker-images"]
-    types: [completed]
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  notify:
+  notify-discord:
     runs-on: ubuntu-latest
-    environment: development
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Send Discord notification on success
-        if: ${{ github.event.workflow_run.conclusion == 'success' }}
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Notify Discord on success
+        if: success()
         run: |
-          curl -X POST -H "Content-Type: application/json" -d '{
-            "content": "**[ SUCCESS ] The project ${GITHUB_REPOSITORY} successfully built and published!** \n\n Project Image Repository URL: ${PROJECT_IMAGE_REPOSITORY_URL} \n Project Repository URL: ${PROJECT_REPOSITORY_URL} \n Project Chart URL: ${PROJECT_CHART_URL}"
-          }' $DISCORD_WEBHOOK
+          curl -X POST -H 'Content-type: application/json' --data '{
+             "content": "Pipeline successfully completed!"
+          }' ${{ secrets.DISCORD_WEBHOOK }}
 
-      - name: Send Discord notification on failure
-        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Notify Discord on failure
+        if: failure()
         run: |
-          curl -X POST -H "Content-Type: application/json" -d '{
-            "content": "**[ FAILURE ] The project ${GITHUB_REPOSITORY} failed to build and publish: ${ERROR_MESSAGE_PUSH} ${ERROR_OUTPUT_PUSH} ${ERROR_MESSAGE_UPDATE_CHART} ${ERROR_OUTPUT_UPDATE_CHART}**"
-          }' $DISCORD_WEBHOOK
+          curl -X POST -H 'Content-type: application/json' --data '{
+             "content": "Pipeline failed!"
+          }' ${{ secrets.DISCORD_WEBHOOK }}
