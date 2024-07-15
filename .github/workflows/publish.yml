@@ -42,3 +42,9 @@ jobs:
         uses: Ilshidur/action-discord@master
         with:
           args: "**[ FAILURE ] Docker image shirishkc/grafana:latest failed to publish to Docker Hub!**"
+
+  dummy-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dummy Job
+        run: echo "This is a dummy job to satisfy the GitHub Actions requirement."
